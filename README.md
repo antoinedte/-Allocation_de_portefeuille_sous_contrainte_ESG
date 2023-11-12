@@ -8,7 +8,7 @@ L’allocation de portefeuille consiste à chercher la meilleur répartition de 
 
 ## Données
 
-Afin de proposer une méthode d’allocation, les étudiants utiliseront la base https://fr. finance.yahoo.com/. Cette dernière fournit les cours des actifs, leur score ESG et de controverse.
+Afin de proposer une méthode d’allocation, les étudiants utiliseront la base https://fr.finance.yahoo.com/. Cette dernière fournit les cours des actifs, leur score ESG et de controverse.
 
 
 ## Étapes du projet
