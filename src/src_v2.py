@@ -49,7 +49,7 @@ class Portfolio:
     def get_return_frequency(self):
         # Create annualized dataframe
         window_size = 12  # Specify the size of the rolling window (12 for annual)
-        returns_annualized = (1 + self.net_returns).rolling(window=window_size).apply(lambda x: x.prod() - 1, raw=False)
+        returns_annualized = (1 + self.net_returns).rolling(window=window_size).apply(lambda x: (x.prod() - 1)*12, raw=False)
         self.gross_returns=returns_annualized.dropna()
         grouped_df_annualized = returns_annualized.mean()
         self.risk_annualized_free_rate=(grouped_df_annualized.mean()/12).min()-0.002
