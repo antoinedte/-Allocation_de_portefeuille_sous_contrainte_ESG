@@ -47,11 +47,25 @@ class Portfolio:
         _gross_returns = self.get_net_returns() + 1
         return _gross_returns
 
+    def get_sector_for_tickers(self):
+        _ticker_sector_dict = {}
+        for ticker in self.tickers:
+            try:
+                ticker_info = yf.Ticker(ticker)
+                sector = ticker_info.info["sector"]
+                _ticker_sector_dict[ticker] = sector
+            except Exception as e:
+                print(f"Error processing {ticker}: {e}")
+                _ticker_sector_dict[ticker] = None     
+        return _ticker_sector_dict
+
     def download_data(self):
         # create net returns
         self.net_returns = self.get_net_returns()
         # create gross returns
         self.gross_returns = self.get_gross_returns()
+        # create a dictionary with the ticker and their sectors
+        self.ticker_sector_dict = self.get_sector_for_tickers()
         # Keep tracks of optimizing functions called
         self.get_optimal_portfolio_called = False
         self.get_efficient_frontier_data_multiple_max_esg_scores_called = False
@@ -177,6 +191,7 @@ class Portfolio:
         self.mu_tangent = self.mu[self.tangente_index]
         self.sigma_tangent = self.sigma[self.tangente_index]
         self.score_esg_tangent = self.esg_scores[self.tangente_index]
+        self.weights_tangente_portfolio = self.optimal_weights[self.tangente_index]
 
         # Keep tracks of optimizing functions called
         self.get_optimal_portfolio_called = True
@@ -210,7 +225,8 @@ class Portfolio:
                                         'gamma_tangent': self.gamma_tangent,
                                         'mu_tangent': self.mu_tangent,
                                         'sigma_tangent': self.sigma_tangent,
-                                        'score_esg_tangent': self.score_esg_tangent}
+                                        'score_esg_tangent': self.score_esg_tangent,
+                                        'weights_tangent': self.weights_tangente_portfolio}
 
         # Keep tracks of optimizing functions called
         self.get_efficient_frontier_data_multiple_max_esg_scores_called = True
