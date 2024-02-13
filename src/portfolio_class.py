@@ -388,4 +388,4 @@ class Portfolio:
         plt.xlabel('Max ESG Score Constraint')
         plt.ylabel('Sharpe Ratio')
         plt.grid(True)
-        plt.show()
+        plt.show() 
