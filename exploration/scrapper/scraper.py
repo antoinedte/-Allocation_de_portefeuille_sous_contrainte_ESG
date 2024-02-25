@@ -1,266 +1,145 @@
-'''This module contains a class for scraping the websites.'''
-
-import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import StaleElementReferenceException
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.remote.webelement import WebElement
-from time import sleep
 import os
-import pkg_resources
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
 
-class WebScraper():
+from tqdm.auto import tqdm
 
-    '''
-    This class is used to scrape a website.
+import json
 
-    Attributes:
-        URL (str): The website URL.
-    '''
+def download_msci_esg_ratings_htmlfile(tickers):
+    # Create a new folder for html files
+    os.makedirs("./esg_html", exist_ok=True)
 
-    def __init__(self, URL: str):
-        '''
-        See help(scraper) for accurate signature
-        '''
-        self.URL = URL
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        self.chrome_path = input('Please specify the chromedriver path : ')
-        self.driver = webdriver.Chrome()
-            # executable_path=self.chrome_path, options=options)
-        self.driver.get(URL)
-        sleep(2)
+    # URL for MSCI ESG ratings
+    msci_url = "https://www.msci.com/our-solutions/esg-investing/esg-ratings/esg-ratings-corporate-search-tool" 
 
-    @classmethod
-    def get_esgdata(cls):
-        '''
-        This function calls the _get_websitename() method and imports the\
-        corresponding module
-        '''
-        website_name = cls._get_websitename()
-        module = "esgmetrics.esgscraper." + website_name
+    # Initialize Selenium webdriver
+    chrome_options = Options()
+    chrome_options.add_argument("--disable-extensions")
+    # chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
 
-        __import__(module)
+    # Initialize dict
+    dict_info = {}
 
-    @staticmethod
-    def _get_filename() -> str:
-        '''
-        This function asks the user for the filepath of the .csv file that
-        lists companies name
+    # Scrape ESG ratings for all constituents
+    for symbol in tickers:
+        print("Crawling ESG Ticker: " + symbol)
 
-        Returns:
-            str : The input file path
-        '''
-        companies_filename = input('Enter the filepath of a .csv file with'
-                                   + ' company names. To run on example'
-                                   + ' dataset(Forbes 2020 2000 companies'
-                                   + ' list), enter 0 : ')
-        if companies_filename == '0':
-            return pkg_resources.resource_stream(__name__, 'data/Forbes.csv')
-        else:
-            return companies_filename
+        # Initialize lists to store scores and dates
+        scores_list = []
+        dates_list = []
+        industry_list = []
 
-    @staticmethod
-    def _get_headername() -> str:
-        '''
-        This function asks the user for the name of the header in the .csv
-        file that lists companies name
+        # Go to the website
+        driver.get(msci_url)
+        time.sleep(0.5)
 
-        Returns:
-            str : The input header name
-        '''
-        companies_headername = input(
-            'Enter the name of the header that contains the company names.To'
-            + ' run on example dataset(Forbes 2020 2000 list), enter 0  : ')
-        if companies_headername == '0':
-            return 'Name'
-        else:
-            return companies_headername
-
-    @staticmethod
-    def _get_websitename() -> str:
-        '''
-        This function asks the user for the website name from which data is to
-        be extracted
-
-        Returns:
-            str : website name
-        '''
-        website = input(
-            'Which website to scrape the data from: MSCI (enter 1),Yahoo'
-            + ' Finance (enter 2), CSRHUB (enter 3), S&P Global (enter 4)'
-            + ' , SustainAnalytics (enter 5) :')
-        if website == '1':
-            return 'msci'
-        if website == '2':
-            return 'yahoo'
-        if website == '3':
-            return 'csrhub'
-        if website == '4':
-            return 'snp_global'
-        if website == '5':
-            return 'sustainanalytics'
-        else:
-            return print('Enter a number between 1 to 5')
-
-    @staticmethod
-    def _get_exportpath() -> str:
-        '''
-        This function asks the user for the path plus output filename where
-        csv file is exported
-
-        Returns:
-            str : filepath
-        '''
-        export_path = input(
-            'Enter the path with output csv file name where output csv file is'
-            + ' to be exported. : ')
-        return export_path
-
-    def wait_element_to_load(self, xpath: str):
-        '''
-        This function waits until the specified xpath is accessible on the
-        website
-
-        Args:
-            xpath ('str'): The xpath of the element to be located on the
-            webpage
-
-        '''
-        delay = 10  # seconds
-        ignored_exceptions = (NoSuchElementException,
-                              StaleElementReferenceException,)
+        # Attempt to reject cookies (if a "reject all" button is available)
         try:
-            sleep(0.5)
-            WebDriverWait(self.driver, delay,
-                          ignored_exceptions=ignored_exceptions).until(
-                EC.presence_of_element_located((By.XPATH, xpath)))
-        except TimeoutException:
-            pass
+            cookie_button = driver.find_element(By.ID, "onetrust-reject-all-handler")
+            cookie_button.click()
+            print("Cookies rejected.")
+            time.sleep(1)
+        except:
+            print("No 'reject all' button found for cookies or it's already rejected.")
 
-    def accept_cookies(self, xpath: str):
-        '''
-        This function clicks on 'Accept cookies' button on the website
+        # Find search input field and enter Ticker
+        element = driver.find_element(By.ID, "_esgratingsprofile_keywords")
+        element.send_keys(symbol)
+        element.send_keys(" ")
+        time.sleep(2)
 
-        Args:
-            xpath (str): The xpath of the 'Accept cookies' button
-        '''
-        cookies_button = self.driver.find_element_by_xpath(xpath)
-        WebScraper.wait_element_to_load(self, xpath)
-        cookies_button.click()
-        sleep(2)
+        # Select first search result
+        element.send_keys(Keys.ARROW_DOWN)
+        time.sleep(2)
+        
+        element.send_keys(Keys.RETURN)
+        time.sleep(1)
 
-    @staticmethod
-    def convert_dict_to_csv(dict_name: str, export_path: str) -> pd.DataFrame:
-        '''
-        This function converts the dictionary to a pandas dataframe and the
-        latter is converted a csv file
+        # -- ESG scores 
+        # Click on the specified button
+        button = driver.find_element(By.ID, "esg-transparency-toggle-link")
+        button.click()
+        time.sleep(0.5)
 
-        Args:
-            dict_name (str): Name of the dictionary
-            export_path (str) : Filepath including the outpule filename in
-            which csv file is to be exported
+        # Find and extract scores
+        g_elements_scores = driver.find_elements(By.CLASS_NAME, "highcharts-label") # highcharts-data-labels highcharts-series-0 highcharts-line-series
+        scores_list.append([g_element.find_element(By.TAG_NAME, "text").get_attribute("textContent") for g_element in g_elements_scores])
 
-        Returns:
-            pd.DataFrame: Pandas Dataframe generated from the dictionary
-        '''
-        df1 = pd.DataFrame.from_dict(dict_name)
-        # If the file already exists, append the new data
-        if os.path.isfile(export_path + '.csv'):
-            df1.to_csv(export_path + '.csv',
-                       mode='a', header=False, index=False)
-        else:
-            df1.to_csv(export_path + '.csv', index=False)
-        return df1
+        # Find and extract dates
+        g_elements_dates = driver.find_elements(By.CLASS_NAME, "highcharts-axis-labels.highcharts-xaxis-labels")
+        dates_list.append([text.get_attribute("textContent") for g_element in g_elements_dates for text in g_element.find_elements(By.TAG_NAME, "text")])
 
-    @staticmethod
-    def append_empty_values(dictionary: dict) -> dict:
-        '''
-        This function appends empty values to the dictionary
+        # Find and extract industry information
+        industry_element = driver.find_element(By.CLASS_NAME, "esg-rating-paragraph-distr")
+        industry_text = industry_element.find_element(By.TAG_NAME, "b").text
+        industry_list.append(industry_text)
 
-        Args:
-            dict (dict): Dictionary to be appended
+        # get possible ratings in the industry
+        possible_ratings = dates_list[0][4:11]
+        # get proportion of peers in the industry
+        dict_industry_peers_ticker = {possible_rating : float(proportion_in_industry[:-2])/100 for possible_rating,proportion_in_industry in zip(possible_ratings, scores_list[0][:len(possible_ratings)])}
+        # get esg scores for the ticker
+        dict_esg_scores_ticker = {date:score for date, score in zip(dates_list[0][-5:], scores_list[0][len(possible_ratings):])}
+        # get industry ticker
+        industry_ticker = industry_list[0]
 
-        Returns:
-            dict: Dictionary appended with empty values
-        '''
-        for key in dictionary.keys():
-            dictionary[key].append(None)
-        return dictionary
+        # save info in dict_info
+        dict_info[symbol] = {"esg_score_dict": dict_esg_scores_ticker, 
+                             "industry_scores_dict": dict_industry_peers_ticker, 
+                             "industry": industry_ticker}
+        # time.sleep(0.5)
 
-    def find_element(self, xpath: str = None, class_name: str = None,
-                     multiple: bool = False) -> WebElement:
-        '''
-        Given xpath or class name, this function locates the corresponding web
-        element
+        # -- Controversy scores
+        # Click on the specified button for controversies
+        controversies_button = driver.find_element(By.ID, "esg-controversies-toggle-link")
+        controversies_button.click()
+        time.sleep(0.5)
 
-        Args:
-            xpath (str) : xpath of the web element
-            class_name (str) : class name of the web element
-            multiple (bool) : True if multiple elements to be located; False
-            otherwise
+        # Find and extract controversy information
+        controversy_elements = driver.find_elements(By.CSS_SELECTOR, "#controversies-table [class^='column-controversy']")
+        controversy_info = {}
+        for element in controversy_elements:
+            class_name = element.get_attribute("class")
+            text = element.text
+            controversy_info[text] = class_name.split('-')[-1]
 
-        Returns:
-            WebElement: element on the website
-        '''
-        if xpath and multiple:
-            WebScraper.wait_element_to_load(self, xpath)
-            return self.driver.find_elements_by_xpath(xpath)
-        elif xpath and not multiple:
-            WebScraper.wait_element_to_load(self, xpath)
-            return self.driver.find_element_by_xpath(xpath)
-        elif class_name and multiple:
-            return self.driver.find_elements_by_class_name(class_name)
-        elif class_name and not multiple:
-            return self.driver.find_element_by_class_name(class_name)
-        return None
+        dict_info[symbol]["controversy_info"] = controversy_info
 
-    def send_request_to_search_bar(self, header_name, df: pd.DataFrame, i: int,
-                                   xpath: str = None, class_name: int =
-                                   None) -> WebElement:
-        '''
-        Given xpath or class name, this function locates the search bar
-        and enters the company name
+        # # Find and extract controversy information
+        # controversy_elements = driver.find_elements(By.CSS_SELECTOR, "#controversies-table .column-controversy, #controversies-table .subcolumn-controversy, #controversies-table .controversy")
+        # controversy_info = {}
+        # for element in controversy_elements:
+        #     class_name = element.get_attribute("class")
+        #     text = element.text
+        #     controversy_info[class_name] = text
 
-        Args:
-            df (dataframe) : input pandas datframe containing Companies name
-            xpath (str) : xpath of the search bar
-            class_name (str) : class name of the search bar
-            multiple (bool) : True if multiple elements to be located;
-            False otherwise
+        # dict_info[symbol]["controversy_info"] =  {value: classe.split('-')[-1]  
+        #                                           for classe, value in controversy_info.items() 
+        #                                           if value in ['Environment', 'Social', 'Governance']}
 
-        Returns:
-            WebElement: webelement of the search bar
-        '''
-        Company = str(df.loc[i][header_name])
-        search_bar = WebScraper.find_element(self, xpath, class_name)
-        search_bar.clear()
-        search_bar = WebScraper.find_element(self, xpath, class_name)
-        search_bar.send_keys(Company)
-        sleep(3)
-        search_bar = WebScraper.find_element(self, xpath, class_name)
-        return search_bar
+    # Close webdriver gracefully
+    driver.quit()
 
-    def restart_driver(self, cookies_xpath):
-        '''
-        This function restarts the website
+    return dict_info
 
-        Args:
-            xpath (str): The xpath of the 'Accept cookies' button
 
-        Returns:
-            WebScraper instance
-        '''
-        self.driver.quit()
-        sleep(60)
-        bot = WebScraper(self.URL)
-        bot.accept_cookies(cookies_xpath)
-        return bot
+def save_dict_to_json(dict, filename):
+    with open(filename, 'w') as file:
+            json.dump(dict, file)
+    print(f"Dictionary saved to {filename}.")
+
+
+def load_dict_from_json(filename):
+    with open(filename, 'r') as file:
+         loaded_data = json.load(file)
+    return loaded_data
+
+
