@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 
 import json
 
+from datetime import datetime
+
 def download_msci_esg_ratings_htmlfile(tickers):
     # Create a new folder for html files
     os.makedirs("./esg_html", exist_ok=True)
@@ -140,6 +142,10 @@ def save_dict_to_json(dict, filename):
 def load_dict_from_json(filename):
     with open(filename, 'r') as file:
          loaded_data = json.load(file)
+
+    for ticker in loaded_data.keys():
+        loaded_data[ticker]['esg_score_dict'] = {datetime.strptime(key, '%b-%y').strftime('%Y-%m-%d'): rating for key, rating in loaded_data[ticker]['esg_score_dict'].items()}
+
     return loaded_data
 
 
