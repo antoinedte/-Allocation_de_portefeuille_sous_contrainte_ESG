@@ -124,6 +124,16 @@ class Portfolio:
     def constraint_max_esg_score(self, x_weights, msci_data, max_esg_score):
         return (np.dot(msci_data, x_weights) - max_esg_score)
     
+    # new
+    def constraint_at_least_x_percent_in_sector(self, x_weights, sector_min_weight_x_dict, ticker_sector_dict):
+        if not isinstance(sector_min_weight_x_dict, dict):
+            raise ValueError("sector_min_weight_x_dict should be a dictionary")
+        else:
+            list_of_min_weights_per_sector = []
+            for sector, min_weight_x in sector_min_weight_x_dict.items():
+                list_of_min_weights_per_sector.append(sum([x_weights[i] for i in range(len(x_weights)) if ticker_sector_dict[self.tickers[i]] == sector]) - min_weight_x)
+        return list_of_min_weights_per_sector
+    
     def compute_selection_exclusion_method(self,
                                            long_only = True,
                                            best_in_class_method = 1,
@@ -194,7 +204,8 @@ class Portfolio:
                               fully_invested=True,
                               long_only=True,
                               best_in_class_method=1,
-                              best_in_class_strategy='global'):
+                              best_in_class_strategy='global',
+                              sector_min_weight_x_dict=None):
         """_summary_
 
         Args:
@@ -230,6 +241,11 @@ class Portfolio:
             _constraints.append({'type': 'ineq',
                                  'fun': self.constraint_max_esg_score,
                                  'args': (self.msci_data, max_esg_score)})
+        # new
+        if sector_min_weight_x_dict != None:
+            _constraints.append({'type': 'ineq',
+                                    'fun': self.constraint_at_least_x_percent_in_sector,
+                                    'args': (sector_min_weight_x_dict, self.ticker_sector_dict)})
 
         # Lists to store results
         self.optimal_weights = []
@@ -274,7 +290,8 @@ class Portfolio:
                                                         long_only=True,
                                                         best_in_class_method=1,
                                                         best_in_class_strategy='global',
-                                                        opt_problem='Markowitz'):
+                                                        opt_problem='Markowitz',
+                                                        sector_min_weight_x_dict=None):
 
         self.multiple_esg_simulations = {}
 
@@ -286,7 +303,8 @@ class Portfolio:
                                                      fully_invested,
                                                      long_only,
                                                      best_in_class_method,
-                                                     best_in_class_strategy)
+                                                     best_in_class_strategy,
+                                                     sector_min_weight_x_dict)
                 
                 self.multiple_esg_simulations[max_esg_score] = {'mu': self.mu,
                                             'sigma': self.sigma,
@@ -335,7 +353,8 @@ class Portfolio:
                                 long_only=True,
                                 best_in_class_method=1,
                                 best_in_class_strategy='global',
-                                opt_problem='Markowitz'):
+                                opt_problem='Markowitz',
+                                sector_min_weight_x_dict=None):
 
         # if ~self.get_optimal_portfolio_called:
         if opt_problem=='Markowitz':
@@ -345,7 +364,8 @@ class Portfolio:
                                     fully_invested=fully_invested,
                                     long_only=long_only,
                                     best_in_class_strategy=best_in_class_strategy,
-                                    best_in_class_method=best_in_class_method)
+                                    best_in_class_method=best_in_class_method,
+                                    sector_min_weight_x_dict=sector_min_weight_x_dict)
 
         if max_esg_score!=np.inf:
             _c = self.esg_scores
@@ -443,7 +463,8 @@ class Portfolio:
                                             fully_invested=True,
                                             long_only=True,
                                             best_in_class_method=1,
-                                            best_in_class_strategy='global'):
+                                            best_in_class_strategy='global',
+                                            sector_min_weight_x_dict=None):
 
         self.get_optimal_portfolio_markowitz(gammas=gammas,
                                 risk_free_rate=risk_free_rate,
@@ -451,7 +472,8 @@ class Portfolio:
                                 fully_invested=fully_invested,
                                 long_only=long_only,
                                 best_in_class_strategy=best_in_class_strategy,
-                                best_in_class_method=best_in_class_method)
+                                best_in_class_method=best_in_class_method,
+                                sector_min_weight_x_dict=sector_min_weight_x_dict)
 
         df_weigths_ = pd.DataFrame(data=self.ticker_sector_dict.values(), 
                                index=self.ticker_sector_dict.keys(), 
@@ -508,7 +530,8 @@ class Portfolio:
                                                         best_in_class_strategy='global',
                                                         with_optimal_portfolio=False,
                                                         with_linear_tangent=False,
-                                                        opt_problem='Markowitz'):
+                                                        opt_problem='Markowitz',
+                                                        sector_min_weight_x_dict=None):
         
         # if ~self.get_efficient_frontier_data_multiple_max_esg_scores_called:
         self.get_efficient_frontier_data_multiple_max_esg_scores(gammas=gammas,
@@ -518,7 +541,8 @@ class Portfolio:
                                                                     long_only=long_only,
                                                                     best_in_class_method=best_in_class_method,
                                                                     best_in_class_strategy=best_in_class_strategy,
-                                                                    opt_problem=opt_problem)
+                                                                    opt_problem=opt_problem,
+                                                                    sector_min_weight_x_dict=sector_min_weight_x_dict)
 
         # Plot the efficient frontier
         plt.figure(figsize=(10, 6))
@@ -570,7 +594,8 @@ class Portfolio:
                                 long_only=True,
                                 best_in_class_method=1,
                                 best_in_class_strategy='global',
-                                opt_problem='Markowitz'):
+                                opt_problem='Markowitz',
+                                sector_min_weight_x_dict=None):
 
         _sharpe_ratio_tangent = []
 
@@ -582,7 +607,8 @@ class Portfolio:
                                         fully_invested=fully_invested,
                                         long_only=long_only,
                                         best_in_class_method=best_in_class_method,
-                                        best_in_class_strategy=best_in_class_strategy)
+                                        best_in_class_strategy=best_in_class_strategy,
+                                        sector_min_weight_x_dict=sector_min_weight_x_dict)
                 
             elif opt_problem=='Pedersen':
                 self.get_optimal_portfolio_Pedersen(gammas,
@@ -611,7 +637,8 @@ class Portfolio:
                                 long_only=True,
                                 best_in_class_method=1,
                                 best_in_class_strategy='global',
-                                opt_problem='Markowitz'):
+                                opt_problem='Markowitz',
+                                sector_min_weight_x_dict=None):
         
         # if not self.get_efficient_frontier_data_multiple_max_esg_scores_called:
         self.get_efficient_frontier_data_multiple_max_esg_scores(gammas=gammas,
@@ -621,7 +648,8 @@ class Portfolio:
                                                                 long_only=long_only,
                                                                 best_in_class_method=best_in_class_method,
                                                                 best_in_class_strategy=best_in_class_strategy,
-                                                                opt_problem=opt_problem)
+                                                                opt_problem=opt_problem,
+                                                                sector_min_weight_x_dict=sector_min_weight_x_dict)
 
         self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
 
