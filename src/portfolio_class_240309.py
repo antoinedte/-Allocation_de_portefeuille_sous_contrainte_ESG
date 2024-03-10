@@ -124,7 +124,6 @@ class Portfolio:
     def constraint_max_esg_score(self, x_weights, msci_data, max_esg_score):
         return (np.dot(msci_data, x_weights) - max_esg_score)
     
-    # new
     def constraint_at_least_x_percent_in_sector(self, x_weights, sector_min_weight_x_dict, ticker_sector_dict):
         if not isinstance(sector_min_weight_x_dict, dict):
             raise ValueError("sector_min_weight_x_dict should be a dictionary")
@@ -200,7 +199,7 @@ class Portfolio:
     def get_optimal_portfolio_markowitz(self, 
                               gammas, 
                               risk_free_rate=0,
-                              max_esg_score=np.inf,
+                              max_esg_score=-np.inf,
                               fully_invested=True,
                               long_only=True,
                               best_in_class_method=1,
@@ -241,7 +240,6 @@ class Portfolio:
             _constraints.append({'type': 'ineq',
                                  'fun': self.constraint_max_esg_score,
                                  'args': (self.msci_data, max_esg_score)})
-        # new
         if sector_min_weight_x_dict != None:
             _constraints.append({'type': 'ineq',
                                     'fun': self.constraint_at_least_x_percent_in_sector,
@@ -479,6 +477,8 @@ class Portfolio:
                                index=self.ticker_sector_dict.keys(), 
                                columns=['sector'])
         df_weigths_['weights'] = self.weights_tangente_portfolio
+        df_weigths_['ticker_colors_indic'] = [i for i in range(len(df_weigths_))]
+        dict_sector_colors = {sector: i for i, sector in enumerate(df_weigths_['sector'].unique())}
 
         # Aggregate weights by ticker and sector
         ticker_weights_ = df_weigths_.loc[df_weigths_["weights"] >= 1.e-10].sort_values(by='sector')['weights']
@@ -488,18 +488,18 @@ class Portfolio:
         fig, ax = plt.subplots(figsize=(12, 8))
 
         # Outer pie chart for sectors
-        outer_colors = plt.cm.gray(np.linspace(0.4, 0.8, len(sector_weights_)))
+        outer_colors = plt.cm.gray(np.linspace(0.4, 0.8, len(df_weigths_['sector'].unique())))
         ax.pie(sector_weights_, 
             labels=sector_weights_.index, 
             startangle=90, 
-            colors=outer_colors, 
+            colors=[outer_colors[dict_sector_colors[sector]] for sector in sector_weights_.index],
             autopct='%1.0f%%', 
             pctdistance=0.85,
             radius=1,
             wedgeprops=dict(width=0.3, edgecolor='w'))  # Add a hole to the pie chart
 
         # Inner pie chart for tickers
-        inner_colors = self.colors[df_weigths_["weights"] >= 1.e-10]
+        inner_colors = self.colors[df_weigths_.loc[df_weigths_["weights"] >= 1.e-10].sort_values(by='sector')['ticker_colors_indic']]
         ax.pie(ticker_weights_, 
             labels=ticker_weights_.index, 
             startangle=90, 
