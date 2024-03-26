@@ -1,6 +1,8 @@
 from datetime import datetime
 import bisect
+from config import TICKERS
 from src.config import TICKERS
+
 
 
 def get_first_date_with_all_msci_score_available(msci_score):

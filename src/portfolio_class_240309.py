@@ -267,7 +267,7 @@ class Portfolio:
             self.esg_scores.append(np.dot(self.msci_data, list(_result.x)))
 
         # Tangent portfolio
-        self.sharpe_ratio = [(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)]
+        self.sharpe_ratio = [(a - risk_free_rate) / (np.sqrt(12)*b) for a, b in zip(self.mu, self.sigma)]
         self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
         self.sharpe_ratio_tagent = self.sharpe_ratio[self.sharpe_ratio_index]
         self.gamma_tangent = gammas[self.sharpe_ratio_index]
