@@ -141,14 +141,14 @@ class Portfolio:
 
         Args:
             long_only (bool, optional): _description_. Defaults to True.
-            best_in_class_method (int, optional): _description_. Defaults to 1.
+            best_in_class_method (float, optional): _description_. Defaults to 1.
             best_in_class_strategy (str, optional): _description_. Defaults to 'global'.
 
         Returns:
             _type_: _description_
         """
         # Define bounds strategy
-        if best_in_class_method<1: # if we apply a bast in class method 
+        if best_in_class_method<1: # if we apply a best in class method 
             if best_in_class_strategy=='global': # if we apply this strategy on the global dataset
                 list_columns=self.stock_dataframe.columns
                 esg_stocks=pd.DataFrame(self.msci_data,index=list_columns,columns=['ESG Score'])
@@ -165,18 +165,20 @@ class Portfolio:
 
             elif best_in_class_strategy=='sector':# if we apply this strategy on each sector
                 list_columns_=self.stock_dataframe.columns
-                esg_stocks_=pd.DataFrame(self.msci_data,index=list_columns_,columns=['ESG_Score'])
-                sectors_dict_ = self.get_sector_for_tickers()
+                df_esg_stocks_=pd.DataFrame(self.msci_data,
+                                         index=list_columns_,
+                                         columns=['ESG_Score'])
+                sectors_dict_ = self.ticker_sector_dict
 
-                esg_stocks_['sector'] = [sectors_dict_[ticker] for ticker in esg_stocks_.index.tolist()]
+                df_esg_stocks_['sector'] = [sectors_dict_[ticker] for ticker in df_esg_stocks_.index.tolist()]
                 
-                df_quantile_of_sector = esg_stocks_.groupby('sector').quantile(best_in_class_method)
+                df_quantile_of_sector = df_esg_stocks_.groupby('sector').quantile(q=1-best_in_class_method, interpolation="lower")
 
                 ticker_to_keep = {}
 
                 for sect in set(sectors_dict_.values()):
-                    quantile_of_sect = df_quantile_of_sector.loc[sect].iloc[0]
-                    ticker_to_keep[sect] = esg_stocks_.query(f'sector == "{sect}"').query(f"ESG_Score <= {quantile_of_sect}").index.tolist()
+                    quantile_of_sect = df_quantile_of_sector.loc[sect, "ESG_Score"]
+                    ticker_to_keep[sect] = df_esg_stocks_.query(f'sector == "{sect}"').query(f"ESG_Score >= {quantile_of_sect}").index.tolist()
 
                 esg_stocks_top_percent_per_sector_ = [ticker for sector_ticker in list(ticker_to_keep.values()) for ticker in sector_ticker]
                 if long_only == True:
@@ -210,7 +212,7 @@ class Portfolio:
         Args:
             gammas (_type_): Inverse of the risk aversion parameter
             risk_free_rate (int, optional): _description_. Defaults to 0.
-            max_esg_score (_type_, optional): _description_. Defaults to np.inf.
+            max_esg_score (_type_, optional): _description_. Defaults to -np.inf.
             fully_invested (bool, optional): _description_. Defaults to True.
             long_only (bool, optional): True for long only, false else. Defaults to True.
             best_in_class_method (int, optional): _description_. Defaults to 1.
@@ -251,6 +253,7 @@ class Portfolio:
         self.sigma, self.sigma_y = [], []
         self.objective_values = []
         self.esg_scores = []
+        self.possible_solution = True
 
         # Optimize
         for gamma in gammas:
@@ -260,24 +263,45 @@ class Portfolio:
                                constraints=tuple(_constraints),
                                bounds=self.bounds)
             
-            self.optimal_weights.append(list(_result.x))
-            self.mu.append(np.dot(self.mu_hat, _result.x))
-            self.sigma.append(np.sqrt(np.dot(_result.x.T, np.dot(self.omega_hat, _result.x))))
-            self.objective_values.append(-_result.fun)
-            self.esg_scores.append(np.dot(self.msci_data, list(_result.x)))
+            if _result.success:
+                self.optimal_weights.append(list(_result.x))
+                self.mu.append(np.dot(self.mu_hat, _result.x))
+                self.sigma.append(np.sqrt(np.dot(_result.x.T, np.dot(self.omega_hat, _result.x))))
+                self.objective_values.append(-_result.fun)
+                self.esg_scores.append(np.dot(self.msci_data, list(_result.x)))
 
-        # Tangent portfolio
-        self.sharpe_ratio = [(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)]
-        self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
-        self.sharpe_ratio_tagent = self.sharpe_ratio[self.sharpe_ratio_index]
-        self.gamma_tangent = gammas[self.sharpe_ratio_index]
-        self.mu_tangent = self.mu[self.sharpe_ratio_index]
-        self.sigma_tangent = self.sigma[self.sharpe_ratio_index]
-        self.weights_tangente_portfolio = self.optimal_weights[self.sharpe_ratio_index]
-        self.score_esg_tangent = self.esg_scores[self.sharpe_ratio_index]
-        # Keep tracks of optimizing functions called
-        self.get_optimal_portfolio_called = True
-        return self
+            else:
+                self.possible_solution = False
+                break
+        
+        if self.possible_solution:
+            # Tangent portfolio
+            self.sharpe_ratio = [(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)]
+            self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
+            self.sharpe_ratio_tagent = self.sharpe_ratio[self.sharpe_ratio_index]
+            self.gamma_tangent = gammas[self.sharpe_ratio_index]
+            self.mu_tangent = self.mu[self.sharpe_ratio_index]
+            self.sigma_tangent = self.sigma[self.sharpe_ratio_index]
+            self.weights_tangente_portfolio = self.optimal_weights[self.sharpe_ratio_index]
+            self.score_esg_tangent = self.esg_scores[self.sharpe_ratio_index]
+            # Keep tracks of optimizing functions called
+            self.get_optimal_portfolio_called = True
+        
+        else :
+            print(f"No solution found for esg score of {max_esg_score}")
+            # Tangent portfolio
+            self.sharpe_ratio = np.nan
+            self.sharpe_ratio_index = np.nan
+            self.sharpe_ratio_tagent = np.nan
+            self.gamma_tangent = np.nan
+            self.mu_tangent = np.nan
+            self.sigma_tangent = np.nan
+            self.weights_tangente_portfolio = [np.nan]*len(self.tickers)
+            self.score_esg_tangent = np.nan
+            # Keep tracks of optimizing functions called
+            self.get_optimal_portfolio_called = True  
+
+        return self.possible_solution
 
 
     def get_efficient_frontier_data_multiple_max_esg_scores(self,
@@ -295,25 +319,36 @@ class Portfolio:
 
         for max_esg_score in max_esg_scores:
             if opt_problem=='Markowitz':
-                self.get_optimal_portfolio_markowitz(gammas,
+                if self.get_optimal_portfolio_markowitz(gammas,
                                                      risk_free_rate,
                                                      max_esg_score,
                                                      fully_invested,
                                                      long_only,
                                                      best_in_class_method,
                                                      best_in_class_strategy,
-                                                     sector_min_weight_x_dict)
+                                                     sector_min_weight_x_dict):
                 
-                self.multiple_esg_simulations[max_esg_score] = {'mu': self.mu,
-                                            'sigma': self.sigma,
-                                            'esg_scores': self.esg_scores,
-                                            'sharpe_ratio': self.sharpe_ratio,
-                                            'sharpe_ratio_tagent': self.sharpe_ratio_tagent,
-                                            'gamma_tangent': self.gamma_tangent,
-                                            'mu_tangent': self.mu_tangent,
-                                            'sigma_tangent': self.sigma_tangent,
-                                            'score_esg_tangent': self.score_esg_tangent,
-                                            'weights_tangente_portfolio': self.weights_tangente_portfolio}
+                    self.multiple_esg_simulations[max_esg_score] = {'mu': self.mu,
+                                                'sigma': self.sigma,
+                                                'esg_scores': self.esg_scores,
+                                                'sharpe_ratio': self.sharpe_ratio,
+                                                'sharpe_ratio_tagent': self.sharpe_ratio_tagent,
+                                                'gamma_tangent': self.gamma_tangent,
+                                                'mu_tangent': self.mu_tangent,
+                                                'sigma_tangent': self.sigma_tangent,
+                                                'score_esg_tangent': self.score_esg_tangent,
+                                                'weights_tangente_portfolio': self.weights_tangente_portfolio}
+                else:
+                    self.multiple_esg_simulations[max_esg_score] = {'mu': np.nan,
+                                                'sigma': np.nan,
+                                                'esg_scores': np.nan,
+                                                'sharpe_ratio': np.nan,
+                                                'sharpe_ratio_tagent': np.nan,
+                                                'gamma_tangent': np.nan,
+                                                'mu_tangent': np.nan,
+                                                'sigma_tangent': np.nan,
+                                                'score_esg_tangent': np.nan,
+                                                'weights_tangente_portfolio': [np.nan]*len(self.tickers)}
             
             elif opt_problem=='Pedersen':
                 self.get_optimal_portfolio_Pedersen(gammas,
