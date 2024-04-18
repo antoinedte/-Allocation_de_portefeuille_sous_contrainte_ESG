@@ -263,6 +263,7 @@ class Portfolio:
                                constraints=tuple(_constraints),
                                bounds=self.bounds)
             
+<<<<<<< HEAD
             if _result.success:
                 self.optimal_weights.append(list(_result.x))
                 self.mu.append(np.dot(self.mu_hat, _result.x))
@@ -302,6 +303,26 @@ class Portfolio:
             self.get_optimal_portfolio_called = True  
 
         return self.possible_solution
+=======
+            self.optimal_weights.append(list(_result.x))
+            self.mu.append(np.dot(self.mu_hat, _result.x))
+            self.sigma.append(np.sqrt(np.dot(_result.x.T, np.dot(self.omega_hat, _result.x))))
+            self.objective_values.append(-_result.fun)
+            self.esg_scores.append(np.dot(self.msci_data, list(_result.x)))
+
+        # Tangent portfolio
+        self.sharpe_ratio = [(a - risk_free_rate) / (np.sqrt(12)*b) for a, b in zip(self.mu, self.sigma)]
+        self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
+        self.sharpe_ratio_tagent = self.sharpe_ratio[self.sharpe_ratio_index]
+        self.gamma_tangent = gammas[self.sharpe_ratio_index]
+        self.mu_tangent = self.mu[self.sharpe_ratio_index]
+        self.sigma_tangent = self.sigma[self.sharpe_ratio_index]
+        self.weights_tangente_portfolio = self.optimal_weights[self.sharpe_ratio_index]
+        self.score_esg_tangent = self.esg_scores[self.sharpe_ratio_index]
+        # Keep tracks of optimizing functions called
+        self.get_optimal_portfolio_called = True
+        return self
+>>>>>>> a04f23287913c9f6d9a8830d0a0c322ed66bbe30
 
 
     def get_efficient_frontier_data_multiple_max_esg_scores(self,

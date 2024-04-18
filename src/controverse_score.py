@@ -11,6 +11,7 @@ project_directory = os.path.join(YOUR_FOLDER_DIRECTORY, '..')
 sys.path.append(project_directory)
 
 from src.backtesting_score import (
+
     retrieve_last_esg_date
 )
 
@@ -52,8 +53,8 @@ def boostrap_method_effect(esg_score=50, method_function = get_new_esg_score_min
             res.append(method_function(esg_score=esg_score, controverse_score=controverse_score))
         
         results[controverse_score] = res
-
-    sns.boxplot(pd.DataFrame.from_dict(results))
+    df=pd.DataFrame.from_dict(results)
+    sns.boxplot(data=df)
     plt.xticks(rotation=90)
     plt.show()
 
