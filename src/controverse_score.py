@@ -17,7 +17,7 @@ from src.backtesting_score import (
 # Min Method
 def get_new_esg_score_min_method(esg_score, controverse_score):
     potential_new_esg_score = np.random.normal(esg_score, controverse_score)
-    new_esg_score = np.min([esg_score, potential_new_esg_score])
+    new_esg_score = np.max(np.min([esg_score, potential_new_esg_score]),0)
     return new_esg_score
 
 # Probabilistic Method
@@ -75,7 +75,7 @@ def change_msci_score_with_controverse(msci_score, end_date, dict_color_to_varia
     df_ = compute_new_esg_score_with_method(msci_score=msci_score, 
                                             end_date=end_date, 
                                             dict_color_to_variance=dict_color_to_variance, 
-                                            method=get_new_esg_score_min_method)
+                                            method=method)
     
     for index in range(len(df_)):
         date = retrieve_last_esg_date(msci_score, df_.loc[index, 'ticker'], end_date) 
