@@ -443,8 +443,10 @@ class Portfolio:
             # Annotate the plot
             plt.title(f'Efficient Frontier with Varying Gamma reach optimum at {np.round(self.gamma_tangent,4)} and ESG score of {np.round(self.score_esg_tangent, 4)}.')
             plt.xlabel('Portfolio Standard Deviation')
+            plt.xlim((0, 3.5))
             plt.ylabel('Portfolio Return')
-            plt.legend()
+            plt.ylim((0, 10))
+            plt.legend(loc='upper left')
             plt.grid(True)
             plt.show()
 
@@ -708,4 +710,157 @@ class Portfolio:
         plt.xlabel('Max ESG Score Constraint')
         plt.ylabel('Weights')
 
+        plt.show()
+
+    # def plot_combined_graphs(self,
+    #                         gammas,
+    #                         risk_free_rate=0,
+    #                         max_esg_scores=[np.inf],
+    #                         fully_invested=True,
+    #                         long_only=True,
+    #                         best_in_class_method=1,
+    #                         best_in_class_strategy='global',
+    #                         opt_problem='Markowitz',
+    #                         sector_min_weight_x_dict=None):
+        
+    #     # Plotting Sharpe Ratio vs Max ESG Score
+    #     _sharpe_ratio_tangent = []
+    #     for max_esg_score in max_esg_scores:
+    #         if opt_problem == 'Markowitz':
+    #             self.get_optimal_portfolio_markowitz(gammas=gammas,
+    #                                     risk_free_rate=risk_free_rate,
+    #                                     max_esg_score=max_esg_score,
+    #                                     fully_invested=fully_invested,
+    #                                     long_only=long_only,
+    #                                     best_in_class_method=best_in_class_method,
+    #                                     best_in_class_strategy=best_in_class_strategy,
+    #                                     sector_min_weight_x_dict=sector_min_weight_x_dict)
+                
+    #         elif opt_problem == 'Pedersen':
+    #             self.get_optimal_portfolio_Pedersen(gammas,
+    #                                     risk_free_rate,
+    #                                     max_esg_score,
+    #                                     fully_invested,
+    #                                     long_only,
+    #                                     best_in_class_method)
+                
+    #         _sharpe_ratio_tangent.append(self.sharpe_ratio_tagent)
+        
+    #     # Plotting Sharpe Ratio vs Max ESG Score
+    #     plt.figure(figsize=(15, 6))
+    #     plt.subplot(1, 2, 1)
+    #     plt.plot(max_esg_scores, _sharpe_ratio_tangent, marker='o', linestyle='-', color='b')
+    #     plt.title('Sharpe Ratio of Tangent Portfolio vs Max ESG Score Constraint')
+    #     plt.xlabel('Max ESG Score Constraint')
+    #     plt.ylabel('Sharpe Ratio')
+    #     plt.grid(True)
+
+    #     # Plotting Weights Evolution
+    #     plt.subplot(1, 2, 2)
+    #     self.get_efficient_frontier_data_multiple_max_esg_scores(gammas=gammas,
+    #                                                             risk_free_rate=risk_free_rate,
+    #                                                             max_esg_scores=max_esg_scores,
+    #                                                             fully_invested=fully_invested,
+    #                                                             long_only=long_only,
+    #                                                             best_in_class_method=best_in_class_method,
+    #                                                             best_in_class_strategy=best_in_class_strategy,
+    #                                                             opt_problem=opt_problem,
+    #                                                             sector_min_weight_x_dict=sector_min_weight_x_dict)
+
+    #     self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
+
+    #     self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.ticker_sector_dict)}
+
+    #     width = 0.7
+
+    #     bottom = np.zeros(len(max_esg_scores))
+    #     for i, (boolean, weight) in enumerate(self.dict_weights_evolution.items()):
+    #         p = plt.bar(np.arange(len(max_esg_scores)), weight, width, label=boolean, bottom=bottom)
+    #         bottom += weight
+
+    #     plt.title("Evolution of the weights of the stocks in the portfolio with the maximum ESG score constraint")
+    #     plt.xticks(np.arange(len(max_esg_scores)), [f'{score:.2f}' for score in max_esg_scores], rotation=45)
+    #     plt.xlabel('Max ESG Score Constraint')
+    #     plt.ylabel('Weights')
+    #     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+        
+    #     plt.tight_layout()
+    #     plt.show()
+
+
+    def plot_sharpe_ratio_and_weights_varying_esg_limit(self,
+                                                        gammas,
+                                                        risk_free_rate=0,
+                                                        max_esg_scores=[np.inf],
+                                                        fully_invested=True,
+                                                        long_only=True,
+                                                        best_in_class_method=1,
+                                                        best_in_class_strategy='global',
+                                                        opt_problem='Markowitz',
+                                                        sector_min_weight_x_dict=None):
+        
+        # Plotting Sharpe Ratio vs Max ESG Score
+        _sharpe_ratio_tangent = []
+        for max_esg_score in max_esg_scores:
+            if opt_problem == 'Markowitz':
+                self.get_optimal_portfolio_markowitz(gammas=gammas,
+                                        risk_free_rate=risk_free_rate,
+                                        max_esg_score=max_esg_score,
+                                        fully_invested=fully_invested,
+                                        long_only=long_only,
+                                        best_in_class_method=best_in_class_method,
+                                        best_in_class_strategy=best_in_class_strategy,
+                                        sector_min_weight_x_dict=sector_min_weight_x_dict)
+                
+            elif opt_problem == 'Pedersen':
+                self.get_optimal_portfolio_Pedersen(gammas,
+                                        risk_free_rate,
+                                        max_esg_score,
+                                        fully_invested,
+                                        long_only,
+                                        best_in_class_method)
+                
+            _sharpe_ratio_tangent.append(self.sharpe_ratio_tagent)
+        
+        # Plotting Sharpe Ratio vs Max ESG Score
+        plt.figure(figsize=(10, 12))
+
+        plt.subplot(2, 1, 1)
+        plt.plot(max_esg_scores, _sharpe_ratio_tangent, marker='o', linestyle='-', color='b')
+        plt.title('Sharpe Ratio of Tangent Portfolio vs Max ESG Score Constraint')
+        plt.xlabel('Max ESG Score Constraint')
+        plt.ylabel('Sharpe Ratio')
+        plt.grid(True)
+
+        # Plotting Weights Evolution
+        plt.subplot(2, 1, 2)
+        self.get_efficient_frontier_data_multiple_max_esg_scores(gammas=gammas,
+                                                                risk_free_rate=risk_free_rate,
+                                                                max_esg_scores=max_esg_scores,
+                                                                fully_invested=fully_invested,
+                                                                long_only=long_only,
+                                                                best_in_class_method=best_in_class_method,
+                                                                best_in_class_strategy=best_in_class_strategy,
+                                                                opt_problem=opt_problem,
+                                                                sector_min_weight_x_dict=sector_min_weight_x_dict)
+
+        self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
+
+        self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.ticker_sector_dict)}
+
+        width = 0.7
+
+        bottom = np.zeros(len(max_esg_scores))
+        for i, (boolean, weight) in enumerate(self.dict_weights_evolution.items()):
+            p = plt.bar(np.arange(len(max_esg_scores)), weight, width, label=boolean, bottom=bottom,  color=self.colors[i])
+            bottom += weight
+
+        plt.title("Evolution of the weights of the stocks in the portfolio with the maximum ESG score constraint")
+        plt.xticks(np.arange(len(max_esg_scores)), [f'{score:.2f}' for score in max_esg_scores], rotation=45)
+        plt.xlabel('Max ESG Score Constraint')
+        plt.ylabel('Weights')
+        # plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=5)
+        
+        plt.tight_layout()
         plt.show()
