@@ -221,9 +221,12 @@ class Portfolio:
         Returns:
             _type_: _description_
         """
+        #TODO rajouter dans returns l'actif sans risque de return constant égal à risk_free_rate et le mettre dnas l'optimisation
+
         # Compute mu_hat and omega_hat
         self.mu_hat = self.get_mu_hat()
         self.omega_hat = self.get_omega_hat()
+        #TODO partir du principe théorique en rajoutant une ligne de cov nulle
 
         # Initial weights
         _initial_weights = np.ones(len(self.tickers)) / len(self.tickers)
