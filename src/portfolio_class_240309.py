@@ -132,7 +132,7 @@ class Portfolio:
             list_of_min_weights_per_sector = []
             for sector, min_weight_x in sector_min_weight_x_dict.items():
                 if sector != "Risk_free_asset":
-                    list_of_min_weights_per_sector.append(sum([x_weights[i] for i in range(len(x_weights)) if ticker_sector_dict[self.tickers[i]] == sector]) - min_weight_x)
+                    list_of_min_weights_per_sector.append(sum([x_weights[i] for i in range(len(x_weights)-1) if ticker_sector_dict[self.tickers[i]] == sector]) - min_weight_x)
                 else:
                     list_of_min_weights_per_sector.append(x_weights[-1] - sector_min_weight_x_dict["Risk_free_asset"])
         return list_of_min_weights_per_sector
@@ -207,6 +207,115 @@ class Portfolio:
             self.bounds.append((0, 0))
 
         return self            
+
+    # def get_optimal_portfolio_markowitz(self, 
+    #                           gammas, 
+    #                           risk_free_rate=0,
+    #                           score_esg_risk_free_rate=0,
+    #                           max_esg_score=-np.inf,
+    #                           fully_invested=True,
+    #                           long_only=True,
+    #                           best_in_class_method=1,
+    #                           best_in_class_strategy='global',
+    #                           sector_min_weight_x_dict=None):
+    #     """_summary_
+
+    #     Args:
+    #         gammas (_type_): Inverse of the risk aversion parameter
+    #         risk_free_rate (int, optional): _description_. Defaults to 0.
+    #         max_esg_score (_type_, optional): _description_. Defaults to -np.inf.
+    #         fully_invested (bool, optional): _description_. Defaults to True.
+    #         long_only (bool, optional): True for long only, false else. Defaults to True.
+    #         best_in_class_method (int, optional): _description_. Defaults to 1.
+    #         best_in_class_strategy (str, optional): 'global' or 'sector'. Defaults to 'global'.
+
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     # Compute mu_hat and omega_hat and add risk free rate
+    #     self.mu_hat = np.pad(self.get_mu_hat(), [(0, 1)], mode='constant', constant_values=risk_free_rate)
+    #     self.omega_hat = np.pad(self.get_omega_hat(), [(0, 1), (0, 1)], mode='constant', constant_values=0)         
+
+    #     n_actifs = len(self.mu_hat)
+
+    #     # Initial weights
+    #     _initial_weights = np.ones(n_actifs) / n_actifs
+
+    #     # Compute selection/exclusion method
+    #     self.compute_selection_exclusion_method(long_only = long_only,
+    #                                             best_in_class_method = best_in_class_method,
+    #                                             best_in_class_strategy = best_in_class_strategy,
+    #                                             risk_free_rate = risk_free_rate)
+    
+    #     # Define contraints
+    #     _constraints = []
+    #     if fully_invested:
+    #         _constraints.append({'type': 'eq',
+    #                              'fun': self.constraint_fully_invested})
+    #     if max_esg_score != np.inf:
+    #         _constraints.append({'type': 'ineq',
+    #                              'fun': self.constraint_max_esg_score,
+    #                              'args': (self.msci_data, score_esg_risk_free_rate, max_esg_score)})
+    #     if sector_min_weight_x_dict != None:
+    #         _constraints.append({'type': 'ineq',
+    #                                 'fun': self.constraint_at_least_x_percent_in_sector,
+    #                                 'args': (sector_min_weight_x_dict, self.ticker_sector_dict)})
+
+    #     # Lists to store results
+    #     self.optimal_weights = []
+    #     self.mu, self.mu_y = [], []
+    #     self.sigma, self.sigma_y = [], []
+    #     self.objective_values = []
+    #     self.esg_scores = []
+    #     self.possible_solution = True
+
+    #     # Optimize
+    #     for gamma in gammas:
+    #         _result = minimize(fun=self.gamma_markowitz_objective, 
+    #                            x0=_initial_weights,
+    #                            args=(gamma, self.mu_hat, self.omega_hat),
+    #                            constraints=tuple(_constraints),
+    #                            bounds=self.bounds)
+            
+    #         if _result.success:
+    #             self.optimal_weights.append(list(_result.x))
+    #             self.mu.append(np.dot(self.mu_hat, _result.x))
+    #             self.sigma.append(np.sqrt(np.dot(_result.x.T, np.dot(self.omega_hat, _result.x))))
+    #             self.objective_values.append(-_result.fun)
+    #             self.esg_scores.append(np.dot(self.msci_data + [score_esg_risk_free_rate], list(_result.x)))
+
+    #         else:
+    #             self.possible_solution = False
+    #             break
+        
+    #     if self.possible_solution:
+    #         # Tangent portfolio
+    #         self.sharpe_ratio = [(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)]
+    #         self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
+    #         self.sharpe_ratio_optimal = self.sharpe_ratio[self.sharpe_ratio_index]
+    #         self.gamma_optimal = gammas[self.sharpe_ratio_index]
+    #         self.mu_optimal = self.mu[self.sharpe_ratio_index]
+    #         self.sigma_optimal = self.sigma[self.sharpe_ratio_index]
+    #         self.weights_portfolio_optimal = self.optimal_weights[self.sharpe_ratio_index]
+    #         self.score_esg_optimal = self.esg_scores[self.sharpe_ratio_index]
+    #         # Keep tracks of optimizing functions called
+    #         self.get_optimal_portfolio_called = True
+        
+    #     else :
+    #         print(f"No solution found for esg score of {max_esg_score}")
+    #         # Tangent portfolio
+    #         self.sharpe_ratio = np.nan
+    #         self.sharpe_ratio_index = np.nan
+    #         self.sharpe_ratio_optimal = np.nan
+    #         self.gamma_optimal = np.nan
+    #         self.mu_optimal = np.nan
+    #         self.sigma_optimal = np.nan
+    #         self.weights_portfolio_optimal = [np.nan]*len(self.tickers)
+    #         self.score_esg_optimal = np.nan
+    #         # Keep tracks of optimizing functions called
+    #         self.get_optimal_portfolio_called = True  
+
+    #     return self.possible_solution
 
     def get_optimal_portfolio_markowitz(self, 
                               gammas, 
@@ -289,15 +398,20 @@ class Portfolio:
                 break
         
         if self.possible_solution:
-            # Tangent portfolio
-            self.sharpe_ratio = [(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)]
-            self.sharpe_ratio_index = np.argmax(self.sharpe_ratio)
-            self.sharpe_ratio_tagent = self.sharpe_ratio[self.sharpe_ratio_index]
-            self.gamma_tangent = gammas[self.sharpe_ratio_index]
-            self.mu_tangent = self.mu[self.sharpe_ratio_index]
-            self.sigma_tangent = self.sigma[self.sharpe_ratio_index]
-            self.weights_tangente_portfolio = self.optimal_weights[self.sharpe_ratio_index]
-            self.score_esg_tangent = self.esg_scores[self.sharpe_ratio_index]
+            # Optimal portfolio discovery
+            self.sharpe_ratio = np.array([(a - risk_free_rate) / b for a, b in zip(self.mu, self.sigma)])
+
+            self.sharpe_ratio_max_indexes = np.where(self.sharpe_ratio == np.max(self.sharpe_ratio))[0]
+            self.score_esg_of_sharpe_ratio_max_indexes = np.array(self.esg_scores)[self.sharpe_ratio_max_indexes]
+            self.score_esg_max_of_sharpe_ratio_max_index = np.argmax(self.score_esg_of_sharpe_ratio_max_indexes)
+            self.optimal_index = self.sharpe_ratio_max_indexes[self.score_esg_max_of_sharpe_ratio_max_index]
+            # Optimal portfolio attibutes
+            self.sharpe_ratio_optimal = self.sharpe_ratio[self.optimal_index]
+            self.gamma_optimal = gammas[self.optimal_index]
+            self.mu_optimal = self.mu[self.optimal_index]
+            self.sigma_optimal = self.sigma[self.optimal_index]
+            self.weights_portfolio_optimal = self.optimal_weights[self.optimal_index]
+            self.score_esg_optimal = self.esg_scores[self.optimal_index]
             # Keep tracks of optimizing functions called
             self.get_optimal_portfolio_called = True
         
@@ -306,12 +420,12 @@ class Portfolio:
             # Tangent portfolio
             self.sharpe_ratio = np.nan
             self.sharpe_ratio_index = np.nan
-            self.sharpe_ratio_tagent = np.nan
-            self.gamma_tangent = np.nan
-            self.mu_tangent = np.nan
-            self.sigma_tangent = np.nan
-            self.weights_tangente_portfolio = [np.nan]*len(self.tickers)
-            self.score_esg_tangent = np.nan
+            self.sharpe_ratio_optimal = np.nan
+            self.gamma_optimal = np.nan
+            self.mu_optimal = np.nan
+            self.sigma_optimal = np.nan
+            self.weights_portfolio_optimal = [np.nan]*len(self.tickers)
+            self.score_esg_optimal = np.nan
             # Keep tracks of optimizing functions called
             self.get_optimal_portfolio_called = True  
 
@@ -349,23 +463,23 @@ class Portfolio:
                                                 'sigma': self.sigma,
                                                 'esg_scores': self.esg_scores,
                                                 'sharpe_ratio': self.sharpe_ratio,
-                                                'sharpe_ratio_tagent': self.sharpe_ratio_tagent,
-                                                'gamma_tangent': self.gamma_tangent,
-                                                'mu_tangent': self.mu_tangent,
-                                                'sigma_tangent': self.sigma_tangent,
-                                                'score_esg_tangent': self.score_esg_tangent,
-                                                'weights_tangente_portfolio': self.weights_tangente_portfolio}
+                                                'sharpe_ratio_optimal': self.sharpe_ratio_optimal,
+                                                'gamma_optimal': self.gamma_optimal,
+                                                'mu_optimal': self.mu_optimal,
+                                                'sigma_optimal': self.sigma_optimal,
+                                                'score_esg_optimal': self.score_esg_optimal,
+                                                'weights_portfolio_optimal': self.weights_portfolio_optimal}
                 else:
                     self.multiple_esg_simulations[max_esg_score] = {'mu': np.nan,
                                                 'sigma': np.nan,
                                                 'esg_scores': np.nan,
                                                 'sharpe_ratio': np.nan,
-                                                'sharpe_ratio_tagent': np.nan,
-                                                'gamma_tangent': np.nan,
-                                                'mu_tangent': np.nan,
-                                                'sigma_tangent': np.nan,
-                                                'score_esg_tangent': np.nan,
-                                                'weights_tangente_portfolio': [np.nan]*len(self.tickers)}
+                                                'sharpe_ratio_optimal': np.nan,
+                                                'gamma_optimal': np.nan,
+                                                'mu_optimal': np.nan,
+                                                'sigma_optimal': np.nan,
+                                                'score_esg_optimal': np.nan,
+                                                'weights_portfolio_optimal': [np.nan]*len(self.tickers)}
             
             elif opt_problem=='Pedersen':
                 self.get_optimal_portfolio_Pedersen(gammas,
@@ -378,11 +492,11 @@ class Portfolio:
                                             'sigma': self.sigma,
                                             'esg_scores': self.esg_scores,
                                             'sharpe_ratio': self.sharpe_ratio,
-                                            'sharpe_ratio_tagent': self.sharpe_ratio_tagent,
-                                            'gamma_tangent': self.gamma_tangent,
-                                            'mu_tangent': self.mu_tangent,
-                                            'sigma_tangent': self.sigma_tangent,
-                                            'score_esg_tangent': self.score_esg_tangent}               
+                                            'sharpe_ratio_optimal': self.sharpe_ratio_optimal,
+                                            'gamma_optimal': self.gamma_optimal,
+                                            'mu_optimal': self.mu_optimal,
+                                            'sigma_optimal': self.sigma_optimal,
+                                            'score_esg_optimal': self.score_esg_optimal}               
         
         # Keep tracks of optimizing functions called
         self.get_efficient_frontier_data_multiple_max_esg_scores_called = True
@@ -395,120 +509,196 @@ class Portfolio:
     # plotting functions         #
     ##############################
 
+    # def plot_efficient_frontier(self,
+    #                             gammas,
+    #                             risk_free_rate=0,
+    #                             score_esg_risk_free_rate=0,
+    #                             max_esg_score=np.inf,
+    #                             fully_invested=True,
+    #                             long_only=True,
+    #                             best_in_class_method=1,
+    #                             best_in_class_strategy='global',
+    #                             opt_problem='Markowitz',
+    #                             sector_min_weight_x_dict=None,
+    #                             with_risk_free_and_without=False):
+
+
+    #     # if ~self.get_optimal_portfolio_called:
+    #     if opt_problem=='Markowitz':
+    #         self.get_optimal_portfolio_markowitz(gammas=gammas,
+    #                                 risk_free_rate=risk_free_rate,
+    #                                 score_esg_risk_free_rate=score_esg_risk_free_rate,
+    #                                 max_esg_score=max_esg_score,
+    #                                 fully_invested=fully_invested,
+    #                                 long_only=long_only,
+    #                                 best_in_class_strategy=best_in_class_strategy,
+    #                                 best_in_class_method=best_in_class_method,
+    #                                 sector_min_weight_x_dict=sector_min_weight_x_dict)
+
+    #     if max_esg_score!=np.inf:
+    #         _c = self.esg_scores
+    #         color = 'ESG score'
+    #         plt.figure(figsize=(10, 6))
+    #         plt.scatter(self.sigma, 
+    #                     self.mu, 
+    #                     s=20, 
+    #                     c=_c, 
+    #                     cmap='viridis', 
+    #                     label='Efficient Frontier')
+
+    #         # Convert max difference to string and diplay colorbar
+    #         _max_diff = str(np.max(_c) - np.min(_c))
+    #         _pattern = r'(\d\.\d{1})\d*e(-\d+)'
+    #         _replacement = r'\1e\2'
+    #         _lisible_max_diff = float(re.sub(_pattern, _replacement, _max_diff))
+    #         plt.colorbar(label=f'Values of {color}\nwith max difference of {_lisible_max_diff}',
+    #                     format="{x:.2f}")
+        
+    #         # Plot the optimal portfolio
+    #         plt.scatter(x=self.sigma_optimal,
+    #                     y=self.mu_optimal,
+    #                     marker='X',
+    #                     s=50,
+    #                     c='r',
+    #                     label='Optimal Portfolio')
+            
+    #         # # Plot the tangent portfolio
+    #         # abscisses = [0, np.max(self.sigma)]
+    #         # ordonnées = [risk_free_rate,
+    #         #             risk_free_rate + (self.mu_optimal - risk_free_rate) / self.sigma_optimal * np.max(self.sigma)]
+    #         # plt.plot(abscisses, ordonnées, alpha=0.7, c='grey')
+
+    #         # Annotate the plot
+    #         plt.title(f'Efficient Frontier with Varying Gamma reach optimum at {np.round(self.gamma_optimal,4)} and ESG score of {np.round(self.score_esg_optimal, 4)}.')
+    #         plt.xlabel('Portfolio Standard Deviation')
+    #         plt.xlim((0, 3.5))
+    #         plt.ylabel('Portfolio Return')
+    #         plt.ylim((0, 10))
+    #         plt.legend(loc='upper left')
+    #         plt.grid(True)
+    #         plt.show()
+
+    #     else:
+    #         _c = gammas
+    #         color = 'gamma'
+    #         plt.figure(figsize=(10, 6))
+    #         plt.scatter(self.sigma, 
+    #                     self.mu, 
+    #                     s=20, 
+    #                     c=_c, 
+    #                     cmap='viridis', 
+    #                     label='Efficient Frontier')
+
+    #         # Convert max difference to string
+    #         _max_diff = str(np.max(_c) - np.min(_c))
+    #         _pattern = r'(\d\.\d{1})\d*e(-\d+)'
+    #         _replacement = r'\1e\2'
+    #         _lisible_max_diff = float(re.sub(_pattern, _replacement, _max_diff))
+    #         ticks = np.linspace(np.min(_c), np.max(_c), 5)  # Adjust the number of ticks as needed
+    #         tick_labels = [f"{x:4f}" for x in ticks]
+
+    #         cbar = plt.colorbar(label=f'Values with max difference of {_lisible_max_diff}', ticks=ticks)
+    #         cbar.set_ticks(ticks)
+    #         cbar.set_ticklabels(tick_labels)
+    #         plt.scatter(x=self.sigma_optimal,
+    #                     y=self.mu_optimal,
+    #                     marker='X',
+    #                     s=50,
+    #                     c='r',
+    #                     label='Optimal Portfolio')
+            
+    #         # Plot the tangent portfolio
+    #         abscisses = [0, np.max(self.sigma)]
+    #         ordonnées = [risk_free_rate,
+    #                     risk_free_rate + (self.mu_optimal - risk_free_rate) / self.sigma_optimal * np.max(self.sigma)]
+    #         plt.plot(abscisses, ordonnées, alpha=0.7, c='grey')
+    #         # Annotate the plot
+    #         plt.title(f'Efficient Frontier with Varying Gamma reach optimum at {np.round(self.gamma_optimal,4)} and ESG score of {np.round(self.score_esg_optimal, 4)}.')
+    #         plt.xlabel('Portfolio Standard Deviation')
+    #         plt.ylabel('Portfolio Return')
+    #         plt.legend()
+    #         plt.grid(True)
+    #         plt.show()
+
     def plot_efficient_frontier(self,
                                 gammas,
                                 risk_free_rate=0,
                                 score_esg_risk_free_rate=0,
-                                max_esg_score=np.inf,
+                                max_esg_score=0,
                                 fully_invested=True,
                                 long_only=True,
                                 best_in_class_method=1,
                                 best_in_class_strategy='global',
                                 opt_problem='Markowitz',
-                                sector_min_weight_x_dict=None):
+                                sector_min_weight_x_dict=None,
+                                with_both_risk_free_and_without=False):
 
-        # if ~self.get_optimal_portfolio_called:
-        if opt_problem=='Markowitz':
-            self.get_optimal_portfolio_markowitz(gammas=gammas,
-                                    risk_free_rate=risk_free_rate,
-                                    score_esg_risk_free_rate=score_esg_risk_free_rate,
-                                    max_esg_score=max_esg_score,
-                                    fully_invested=fully_invested,
-                                    long_only=long_only,
-                                    best_in_class_strategy=best_in_class_strategy,
-                                    best_in_class_method=best_in_class_method,
-                                    sector_min_weight_x_dict=sector_min_weight_x_dict)
-
-        if max_esg_score!=np.inf:
-            _c = self.esg_scores
-            color = 'ESG score'
-            plt.figure(figsize=(10, 6))
-            plt.scatter(self.sigma, 
-                        self.mu, 
-                        s=20, 
-                        c=_c, 
-                        cmap='viridis', 
-                        label='Efficient Frontier')
-
-            # Convert max difference to string
-            _max_diff = str(np.max(_c) - np.min(_c))
-            _pattern = r'(\d\.\d{1})\d*e(-\d+)'
-            _replacement = r'\1e\2'
-            _lisible_max_diff = float(re.sub(_pattern, _replacement, _max_diff))
-            # ticks = np.linspace(np.min(_c), np.max(_c), 5)  # Adjust the number of ticks as needed
-            # tick_labels = [f"{x:.1f}" for x in ticks]
-
-            # cbar = plt.colorbar(label=f'Values with max difference of {_lisible_max_diff}', ticks=ticks)
-            # cbar.set_ticks(ticks)
-            # cbar.set_ticklabels(tick_labels)
-            plt.colorbar(label=f'Values of {color}\nwith max difference of {_lisible_max_diff}',
-                        format="{x:.2f}")
-        
-            # Plot the optimal portfolio
-            plt.scatter(x=self.sigma_tangent,
-                        y=self.mu_tangent,
-                        marker='X',
-                        s=50,
-                        c='r',
-                        label='Optimal Portfolio')
-            
-            # # Plot the tangent portfolio
-            # abscisses = [0, np.max(self.sigma)]
-            # ordonnées = [risk_free_rate,
-            #             risk_free_rate + (self.mu_tangent - risk_free_rate) / self.sigma_tangent * np.max(self.sigma)]
-            # plt.plot(abscisses, ordonnées, alpha=0.7, c='grey')
-
-            # Annotate the plot
-            plt.title(f'Efficient Frontier with Varying Gamma reach optimum at {np.round(self.gamma_tangent,4)} and ESG score of {np.round(self.score_esg_tangent, 4)}.')
-            plt.xlabel('Portfolio Standard Deviation')
-            plt.xlim((0, 3.5))
-            plt.ylabel('Portfolio Return')
-            plt.ylim((0, 10))
-            plt.legend(loc='upper left')
-            plt.grid(True)
-            plt.show()
-
+        if with_both_risk_free_and_without:
+            if risk_free_rate==0:
+                raise ValueError("Risk free rate should be different from 0 if you want to plot both with and without risk free rate")
+            loops_over_risk_free = [0, risk_free_rate]
         else:
-            _c = gammas
-            color = 'gamma'
-            plt.figure(figsize=(10, 6))
-            plt.scatter(self.sigma, 
-                        self.mu, 
-                        s=20, 
-                        c=_c, 
-                        cmap='viridis', 
-                        label='Efficient Frontier')
+            loops_over_risk_free = [risk_free_rate]
 
-            # Convert max difference to string
-            _max_diff = str(np.max(_c) - np.min(_c))
-            _pattern = r'(\d\.\d{1})\d*e(-\d+)'
-            _replacement = r'\1e\2'
-            _lisible_max_diff = float(re.sub(_pattern, _replacement, _max_diff))
-            ticks = np.linspace(np.min(_c), np.max(_c), 5)  # Adjust the number of ticks as needed
-            tick_labels = [f"{x:4f}" for x in ticks]
+        plt.figure(figsize=(10, 6))
 
-            cbar = plt.colorbar(label=f'Values with max difference of {_lisible_max_diff}', ticks=ticks)
-            cbar.set_ticks(ticks)
-            cbar.set_ticklabels(tick_labels)
-            plt.scatter(x=self.sigma_tangent,
-                        y=self.mu_tangent,
-                        marker='X',
-                        s=50,
-                        c='r',
-                        label='Optimal Portfolio')
-            
-            # Plot the tangent portfolio
-            abscisses = [0, np.max(self.sigma)]
-            ordonnées = [risk_free_rate,
-                        risk_free_rate + (self.mu_tangent - risk_free_rate) / self.sigma_tangent * np.max(self.sigma)]
-            plt.plot(abscisses, ordonnées, alpha=0.7, c='grey')
-            # Annotate the plot
-            plt.title(f'Efficient Frontier with Varying Gamma reach optimum at {np.round(self.gamma_tangent,4)} and ESG score of {np.round(self.score_esg_tangent, 4)}.')
-            plt.xlabel('Portfolio Standard Deviation')
-            plt.ylabel('Portfolio Return')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
+        for value_of_risk_free_rate in loops_over_risk_free:
+            if opt_problem=='Markowitz':
+                self.get_optimal_portfolio_markowitz(gammas=gammas,
+                                        risk_free_rate=value_of_risk_free_rate,
+                                        score_esg_risk_free_rate=score_esg_risk_free_rate,
+                                        max_esg_score=max_esg_score,
+                                        fully_invested=fully_invested,
+                                        long_only=long_only,
+                                        best_in_class_strategy=best_in_class_strategy,
+                                        best_in_class_method=best_in_class_method,
+                                        sector_min_weight_x_dict=sector_min_weight_x_dict)
+
+                if value_of_risk_free_rate==0:
+                    _c = self.esg_scores
+                    color = 'ESG score'
+
+                    # plot portefolio with gamma
+                    plt.scatter(self.sigma, 
+                                self.mu, 
+                                s=20, 
+                                c=_c, 
+                                cmap='viridis', 
+                                label='Efficient Frontier')
+
+                    # Convert max difference to string and diplay colorbar
+                    _max_diff = str(np.max(_c) - np.min(_c))
+                    _pattern = r'(\d\.\d{1})\d*e(-\d+)'
+                    _replacement = r'\1e\2'
+                    _lisible_max_diff = float(re.sub(_pattern, _replacement, _max_diff))
+                    plt.colorbar(label=f'Values of {color}\nwith max difference of {_lisible_max_diff}',
+                                format="{x:.2f}")
+                
+                    # Plot the optimal portfolio
+                    plt.scatter(x=self.sigma_optimal,
+                                y=self.mu_optimal,
+                                marker='X',
+                                s=50,
+                                c='r',
+                                label='Optimal Portfolio')
+                
+                else:
+                    plt.plot(self.sigma,
+                             self.mu,
+                             alpha=0.7, 
+                             c='grey',
+                             label=f'Efficient Frontier with risk free asset with score {np.round(score_esg_risk_free_rate, 0)}')
+
+        # Annotate the plot
+        plt.title(f'Efficient Frontier for a risk free rate of {risk_free_rate} and a minimum esg score of {max_esg_score} \noptimum reached at gamma {np.round(self.gamma_optimal,2)} for sharpe ratio of {np.round(self.sharpe_ratio_optimal,2)}\n and ESG score of {np.round(self.score_esg_optimal, 2)}.')
+        plt.xlabel('Portfolio Standard Deviation')
+        plt.ylabel('Portfolio Return')
+        if long_only:
+            plt.xlim((0, 3.5))
+            plt.ylim((0, 10))
+        plt.legend(loc='upper left')
+        plt.grid(True)
+        plt.show()
 
     def plot_tangente_portfolio_composition(self,
                                             gammas, 
@@ -534,7 +724,7 @@ class Portfolio:
         df_weigths_ = pd.DataFrame(data=list(self.ticker_sector_dict.values())+['Risk_free_asset'], 
                                index=list(self.ticker_sector_dict.keys())+['Risk_free_asset'], 
                                columns=['sector'])
-        df_weigths_['weights'] = self.weights_tangente_portfolio
+        df_weigths_['weights'] = self.weights_portfolio_optimal
         df_weigths_['ticker_colors_indic'] = [i for i in range(len(df_weigths_))]
         dict_sector_colors = {sector: i for i, sector in enumerate(df_weigths_['sector'].unique())}
 
@@ -624,8 +814,8 @@ class Portfolio:
             for max_esg_score in max_esg_scores:
                 # Plot the optimal portfolio
                 if with_optimal_portfolio:
-                    plt.scatter(x=self.multiple_esg_simulations[max_esg_score]['sigma_tangent'],
-                                y=self.multiple_esg_simulations[max_esg_score]['mu_tangent'],
+                    plt.scatter(x=self.multiple_esg_simulations[max_esg_score]['sigma_optimal'],
+                                y=self.multiple_esg_simulations[max_esg_score]['mu_optimal'],
                                 marker='X',
                                 s=50,
                                 c='r',
@@ -635,11 +825,14 @@ class Portfolio:
                     # Plot the tangent portfolio
                     abscisses = [0, np.max(self.multiple_esg_simulations[max_esg_score]['sigma'])]
                     ordonnées = [risk_free_rate,
-                                risk_free_rate + (self.multiple_esg_simulations[max_esg_score]['mu_tangent'] - risk_free_rate) / self.multiple_esg_simulations[max_esg_score]['sigma_tangent'] * np.max(self.multiple_esg_simulations[max_esg_score]['sigma'])]
+                                risk_free_rate + (self.multiple_esg_simulations[max_esg_score]['mu_optimal'] - risk_free_rate) / self.multiple_esg_simulations[max_esg_score]['sigma_optimal'] * np.max(self.multiple_esg_simulations[max_esg_score]['sigma'])]
                     plt.plot(abscisses, ordonnées, alpha=0.7, c='grey')
         
         # Annotate the plot
-        plt.title(f'Multiple Efficient Frontiers with Varying Max ESG score')
+        if risk_free_rate==0:
+            plt.title(f'Multiple Efficient Frontiers with Varying Max ESG score without risk free asset ')
+        else:
+            plt.title(f'Multiple Efficient Frontiers with Varying Max ESG score with risk free asset\nof rate ({risk_free_rate}) and esg score {score_esg_risk_free_rate}')
         plt.xlabel('Portfolio Standard Deviation')
         plt.ylabel('Portfolio Return')
         plt.legend()
@@ -680,7 +873,7 @@ class Portfolio:
                                         long_only,
                                         best_in_class_method)
                 
-            _sharpe_ratio_tangent.append(self.sharpe_ratio_tagent)
+            _sharpe_ratio_tangent.append(self.sharpe_ratio_optimal)
         
         # Plot the efficient frontier
         plt.figure(figsize=(10, 6))
@@ -715,7 +908,7 @@ class Portfolio:
                                                                 opt_problem=opt_problem,
                                                                 sector_min_weight_x_dict=sector_min_weight_x_dict)
 
-        self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
+        self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_portfolio_optimal'] for max_score in max_esg_scores]
 
         self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.ticker_sector_dict)}
 
@@ -770,7 +963,7 @@ class Portfolio:
     #                                     long_only,
     #                                     best_in_class_method)
                 
-    #         _sharpe_ratio_tangent.append(self.sharpe_ratio_tagent)
+    #         _sharpe_ratio_tangent.append(self.sharpe_ratio_optimal)
         
     #     # Plotting Sharpe Ratio vs Max ESG Score
     #     plt.figure(figsize=(15, 6))
@@ -793,7 +986,7 @@ class Portfolio:
     #                                                             opt_problem=opt_problem,
     #                                                             sector_min_weight_x_dict=sector_min_weight_x_dict)
 
-    #     self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
+    #     self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_portfolio_optimal'] for max_score in max_esg_scores]
 
     #     self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.ticker_sector_dict)}
 
@@ -848,7 +1041,7 @@ class Portfolio:
                                         long_only,
                                         best_in_class_method)
                 
-            _sharpe_ratio_tangent.append(self.sharpe_ratio_tagent)
+            _sharpe_ratio_tangent.append(self.sharpe_ratio_optimal)
         
         # Plotting Sharpe Ratio vs Max ESG Score
         plt.figure(figsize=(10, 12))
@@ -858,6 +1051,7 @@ class Portfolio:
         plt.title('Sharpe Ratio of Tangent Portfolio vs Max ESG Score Constraint')
         plt.xlabel('Max ESG Score Constraint')
         plt.ylabel('Sharpe Ratio')
+        plt.ylim((0.5, 5.5))
         plt.grid(True)
 
         # Plotting Weights Evolution
@@ -873,9 +1067,10 @@ class Portfolio:
                                                                 opt_problem=opt_problem,
                                                                 sector_min_weight_x_dict=sector_min_weight_x_dict)
 
-        self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_tangente_portfolio'] for max_score in max_esg_scores]
+        self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_portfolio_optimal'] for max_score in max_esg_scores]
 
-        self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(list(self.ticker_sector_dict)+['Risk_free_asset'])}
+        # self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.tickers+['Risk_free_asset'])}
+        self.dict_weights_evolution = {ticker: np.array([self.weights_evolution_with_max_score[score][ticker_index-1] for score in range(len(max_esg_scores))]) for ticker_index, ticker in enumerate(self.tickers+['Risk_free_asset'])}
 
         width = 0.7
 
