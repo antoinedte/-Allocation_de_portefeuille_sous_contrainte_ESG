@@ -1069,15 +1069,21 @@ class Portfolio:
 
         self.weights_evolution_with_max_score = [self.multiple_esg_simulations[max_score]['weights_portfolio_optimal'] for max_score in max_esg_scores]
 
+        # as there is a bug when no solution has been found, create a complete nan vector
+        index_with_missing_nan = np.where([len(self.weights_evolution_with_max_score[ticker_index]) != len(self.tickers)+1 for ticker_index in range(30)])[0] # where 30 is the number of splits in MAX_ESG_SCORES
+        if list(index_with_missing_nan) != []:
+            for index in list(index_with_missing_nan):
+                self.weights_evolution_with_max_score[index] = [np.nan]*(len(self.tickers)+1)
+
         # self.dict_weights_evolution = {ticker: np.array(self.weights_evolution_with_max_score)[:, i] for i, ticker in enumerate(self.tickers+['Risk_free_asset'])}
-        self.dict_weights_evolution = {ticker: np.array([self.weights_evolution_with_max_score[score][ticker_index-1] for score in range(len(max_esg_scores))]) for ticker_index, ticker in enumerate(self.tickers+['Risk_free_asset'])}
+        self.dict_weights_evolution = {ticker: np.array([self.weights_evolution_with_max_score[score][ticker_index] for score in range(len(max_esg_scores))]) for ticker_index, ticker in enumerate(self.tickers+['Risk_free_asset'])}
 
         width = 0.7
 
         bottom = np.zeros(len(max_esg_scores))
-        for i, (boolean, weight) in enumerate(self.dict_weights_evolution.items()):
-            p = plt.bar(np.arange(len(max_esg_scores)), weight, width, label=boolean, bottom=bottom,  color=self.colors[i])
-            bottom += weight
+        for i, tick in enumerate(self.tickers+['Risk_free_asset']):
+            p = plt.bar(np.arange(len(max_esg_scores)), self.dict_weights_evolution[tick], width, label=tick, bottom=bottom,  color=self.colors[i])
+            bottom += self.dict_weights_evolution[tick]
 
         plt.title("Evolution of the weights of the stocks in the portfolio with the maximum ESG score constraint")
         plt.xticks(np.arange(len(max_esg_scores)), [f'{score:.2f}' for score in max_esg_scores], rotation=45)

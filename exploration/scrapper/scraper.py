@@ -143,8 +143,8 @@ def load_dict_from_json(filename):
     with open(filename, 'r') as file:
          loaded_data = json.load(file)
 
-    for ticker in loaded_data.keys():
-        loaded_data[ticker]['esg_score_dict'] = {datetime.strptime(key, '%b-%y').strftime('%Y-%m-%d'): rating for key, rating in loaded_data[ticker]['esg_score_dict'].items()}
+    # for ticker in loaded_data.keys():
+    #     loaded_data[ticker]['esg_score_dict'] = {datetime.strptime(key, '%b-%y').strftime('%Y-%m-%d'): rating for key, rating in loaded_data[ticker]['esg_score_dict'].items()}
 
     return loaded_data
 

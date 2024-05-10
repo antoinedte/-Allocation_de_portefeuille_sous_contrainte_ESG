@@ -25,12 +25,26 @@ def get_new_esg_score_min_method(esg_score, controverse_score):
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 
-def proba_controverse_effective(controverse_score):
-    sig = sigmoid(controverse_score-1)
-    return (sig * 2) - 0.99
+# def proba_controverse_effective(x, convexity="convex", lambda_=1):
+#     if convexity=="concave":
+#         proba = 1/(1 + np.exp(-lambda_*(x-1))) # -1 pour commencer à 1/2
+#         proba -= 1/2
+#     elif convexity=="convex":
+#         proba = 1/(1 + np.exp(-lambda_*(x-4))) # -4 pour finir à 1/2
+#     else:
+#         raise ValueError("Enter a correct convexity label, be it convex or concave!")
+#     return proba
 
-def get_new_esg_score_proba_method(esg_score, controverse_score):
-    controverse_might_occurs = np.random.binomial(1, proba_controverse_effective(controverse_score))
+def proba_controverse_effective(c, proba_pour_1, proba_pour_4):
+    a_plus_b = np.log(proba_pour_1)
+    quatre_a_plus_b = np.log(proba_pour_4)
+    a = (quatre_a_plus_b - a_plus_b) / 3
+    b = a_plus_b - a
+    return np.exp(a * c + b)
+
+def get_new_esg_score_proba_method(esg_score, controverse_score, proba_pour_1=0.1, proba_pour_4=0.5):
+
+    controverse_might_occurs = np.random.binomial(1, proba_controverse_effective(controverse_score, proba_pour_1=proba_pour_1, proba_pour_4=proba_pour_4))
     if controverse_might_occurs == 1:
         effect_on_new_esg_score = -np.abs(np.random.normal(0, controverse_score))
         new_esg_score = esg_score + effect_on_new_esg_score
@@ -39,7 +53,7 @@ def get_new_esg_score_proba_method(esg_score, controverse_score):
     return new_esg_score
 
 # boostrap method effect
-def boostrap_method_effect(esg_score=50, method_function = get_new_esg_score_min_method, nb_boostrap=1000):
+def boostrap_method_effect(esg_score=30, method_function = get_new_esg_score_min_method, nb_boostrap=1000):
     # Define the range of controverse_score values
     controverse_scores = np.linspace(1, 4, 9)
 
