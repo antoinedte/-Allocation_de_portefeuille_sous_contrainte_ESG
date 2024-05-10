@@ -21,7 +21,9 @@ Afin de proposer une méthode d’allocation, les étudiants utiliseront la base
 # Comment naviguer dans ce repo ?
 
 Le repo n'a pas encore été nettoyé (mais le sera d'ici la fin du weekend).
+
 Les codes pertinents concernent:
-- Le scraper MSCI pour les scores ESG et les scores de controverse des entreprises
-- Le notebook d'étude des scores ESG avec des frontières efficientes, sharpe ratio et composition de portefeuille efficients (d'où proviennent les représentations du rapport)
-- Le notebook d'étude des scores de controverse avec des simulations
+- Le scraper MSCI pour les scores ESG et les scores de controverse des entreprises [exploration/scrapper]
+- La class Portfolio créée pour toutes notes analyses [src/portfolio_class_240309.py]
+- Le notebook d'étude des scores ESG avec des frontières efficientes, sharpe ratio et composition de portefeuille efficients (d'où proviennent les représentations du rapport) [exploration/20240309_msci_rating copy.ipynb]
+- Le notebook d'étude des scores de controverse avec des simulations [exploration/20240322_controverse.ipynb]
