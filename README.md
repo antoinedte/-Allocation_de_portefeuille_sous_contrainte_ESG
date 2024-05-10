@@ -17,3 +17,11 @@ Afin de proposer une méthode d’allocation, les étudiants utiliseront la base
 - Estimer les inputs nécessaires aux méthodes d’allocations
 - Comparer plusieurs méthodes d’allocation de portefeuilles et d’intégration des critères ESG
 - Étudier la modification des frontières efficientes en fonction de ces contraintes
+
+# Comment naviguer dans ce repo ?
+
+Le repo n'a pas encore été nettoyé (mais le sera d'ici la fin du weekend).
+Les codes pertinents concernent:
+- Le scraper MSCI pour les scores ESG et les scores de controverse des entreprises
+- Le notebook d'étude des scores ESG avec des frontières efficientes, sharpe ratio et composition de portefeuille efficients (d'où proviennent les représentations du rapport)
+- Le notebook d'étude des scores de controverse avec des simulations
