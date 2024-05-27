@@ -22,10 +22,8 @@ Un scraper dynamique des scores ESG et de controverse a été codé à partir de
 
 # Comment naviguer dans ce repo ?
 
-Le repo n'a pas encore été nettoyé (mais le sera d'ici la fin du weekend).
-
 Les codes pertinents concernent:
-- Le scraper MSCI pour les scores ESG et les scores de controverse des entreprises [exploration/scrapper]
-- La class Portfolio créée pour toutes notes analyses [src/portfolio_class_240309.py]
-- Le notebook d'étude des scores ESG avec des frontières efficientes, sharpe ratio et composition de portefeuille efficients (d'où proviennent les représentations du rapport) [exploration/20240309_msci_rating copy.ipynb]
-- Le notebook d'étude des scores de controverse avec des simulations [exploration/20240322_controverse.ipynb]
+- Le scraper MSCI pour les scores ESG et les scores de controverse des entreprises [exploration/scraper]
+- La class Portfolio créée pour toutes notes analyses [src/portfolio_class.py]
+- Le notebook d'étude des scores ESG avec des frontières efficientes, sharpe ratio et composition de portefeuille efficients (d'où proviennent les représentations du rapport) [exploration/notebook_allocation_optimale.ipynb]
+- Le notebook d'étude des scores de controverse avec des simulations [exploration/notebook_integration_de_la_controverse.ipynb]
